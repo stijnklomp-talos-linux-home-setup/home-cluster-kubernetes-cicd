@@ -1,0 +1,86 @@
+# [https://tekton.dev/docs/operator/tektonconfig/](Tekton Config)
+# Operators/webhooks run on the Lenovo worker pool; TaskRun pods run on the CI node (Dell).
+# The control-plane node stays kube-system only (see talos-linux-setup/designate-node-roles.yaml).
+
+apiVersion: operator.tekton.dev/v1alpha1
+kind: TektonConfig
+metadata:
+  name: config
+spec:
+  profile: basic
+  targetNamespace: tekton-pipelines
+
+  config:
+    nodeSelector:
+      node-role.kubernetes.io/worker: ""
+    tolerations: []
+
+  pruner:
+    resources: [pipelinerun, taskrun]
+    schedule: "0 * * * *"
+    keep-since: 1440 # minutes = 24h
+    prune-per-resource: false
+
+  pipeline:
+    default-service-account: tekton-bot
+    default-timeout-minutes: 60
+    default-managed-by-label-value: tekton
+    disable-affinity-assistant: true
+    enable-api-fields: beta
+    enable-cluster-resolver: true
+    cluster-resolver-config:
+      default-namespace: tekton-pipelines
+      blocked-namespaces: "*"
+      allowed-namespaces: "tekton-pipelines,home-infra"
+    require-git-ssh-secret-known-hosts: true
+    running-in-environment-with-injected-sidecars: false
+    # Send all TaskRun/PipelineRun pods to the CI node (the Dell).
+    # Requires the CI node label/taint: see talos-linux-setup/designate-node-roles.yaml.
+    default-pod-template: |
+      nodeSelector:
+        node-role.kubernetes.io/ci: ""
+      tolerations:
+        - key: node-role.kubernetes.io/ci
+          operator: Exists
+          effect: NoSchedule
+
+  chain:
+    disabled: true # signing not used in the home cluster
+
+  trigger:
+    disabled: false
+    options:
+      deployments:
+        tekton-triggers-controller:
+          spec:
+            replicas: 1
+            template:
+              spec:
+                nodeSelector: { node-role.kubernetes.io/worker: "" }
+                tolerations: []
+        tekton-triggers-webhook:
+          spec:
+            replicas: 1
+            template:
+              spec:
+                nodeSelector: { node-role.kubernetes.io/worker: "" }
+                tolerations: []
+      webhookConfigurationOptions:
+        validation.webhook.triggers.tekton.dev:
+          failurePolicy: Fail
+          timeoutSeconds: 20
+          sideEffects: None
+        webhook.triggers.tekton.dev:
+          failurePolicy: Fail
+          timeoutSeconds: 20
+          sideEffects: None
+      configMaps:
+        config-logging-triggers:
+          data:
+            loglevel.controller: "info"
+            loglevel.webhook: "info"
+
+  result:
+    disabled: true
+    # TODO (later date): enable Tekton Results + log retention once the
+    # dashboard/log strategy for the home cluster is decided.

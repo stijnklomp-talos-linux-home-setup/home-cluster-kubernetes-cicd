@@ -1,0 +1,33 @@
+# Dashboard pod: pin to the Lenovo worker pool (control plane stays
+# kube-system only) and wire the logout button to oauth2-proxy's sign_out
+# endpoint. args is a full list replace (strategic merge) — keep every flag
+# from the vendored v0.72.0 write-mode manifest, only fill --logout-url.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tekton-dashboard
+  namespace: tekton-pipelines
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+        node-role.kubernetes.io/worker: ""
+      tolerations:
+        - key: node-role.kubernetes.io/worker
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: tekton-dashboard
+          args:
+            - --default-namespace=
+            - --external-logs=
+            - --log-format=json
+            - --log-level=info
+            - --logout-url=https://tekton.192.168.1.200.sslip.io/oauth2/sign_out?rd=https%3A%2F%2Ftekton.192.168.1.200.sslip.io
+            - --namespaces=tekton-pipelines,home-admin,home-infra,home-service-a,home-auto
+            - --pipelines-namespace=tekton-pipelines
+            - --port=9097
+            - --read-only=false
+            - --stream-logs=true
+            - --triggers-namespace=tekton-pipelines

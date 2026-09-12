@@ -1,0 +1,4 @@
+host: "pipelines-as-code.192.168.1.200.sslip.io"
+
+# LAN uses the internal CA; switch to cloudflare-issuer once a domain exists
+clusterIssuer: home-issuer

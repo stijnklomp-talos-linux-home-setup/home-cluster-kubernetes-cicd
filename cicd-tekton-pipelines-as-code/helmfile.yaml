@@ -1,0 +1,38 @@
+helmDefaults:
+  createNamespace: false
+  wait: true
+  timeout: 900 # 15 minutes
+
+releases:
+  # Custom charts/kustomizations
+
+  - name: pipelines-as-code-operator
+    chart: ./kustomizations/pipelines-as-code
+    labels:
+      stage: "operator"
+    strategicMergePatches:
+      - ./kustomizations/pipelines-as-code/patches/configmaps.yaml
+
+  - name: expose-pipelines-as-code
+    chart: ./charts/expose-pipelines-as-code
+    labels:
+      stage: "expose-operator"
+    needs:
+      - pipelines-as-code-operator
+
+  # Webhook relay: GitHub -> hook.pipelinesascode.com -> gosmee -> PaC controller.
+  # No domain/public IP needed. Remove when a domain + Cloudflare Tunnel exist.
+  - name: gosmee-client
+    chart: ./charts/gosmee-client
+    labels:
+      stage: "gosmee"
+    needs:
+      - pipelines-as-code-operator
+
+  - name: pipelines-as-code-repositories
+    chart: ./charts/pipelines-as-code-repositories
+    labels:
+      stage: "pipelines"
+    needs:
+      - pipelines-as-code-operator
+      - expose-pipelines-as-code

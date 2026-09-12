@@ -1,0 +1,21 @@
+{{- range $ns := .Values.namespaces }}
+{{- $prefix := $.Values.namespacePrefix | default "" -}}
+{{- $nsName := $ns.name -}}
+{{- $fullns := ternary (printf "%s-%s" $prefix $nsName) $nsName (ne $prefix "") -}}
+
+{{- range $repo := ($ns.repositories | default (list)) }}
+apiVersion: pipelinesascode.tekton.dev/v1alpha1
+kind: Repository
+metadata:
+  name: {{ printf "%s-%s" $prefix (trimSuffix ".git" (regexReplaceAll "^.*/" $repo "")) | trimPrefix "-" | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $fullns }}
+spec:
+  url: {{ quote $repo }}
+  {{- if $ns.policy }}
+  settings:
+    policy:
+      {{- toYaml $ns.policy | nindent 6 }}
+  {{- end }}
+---
+{{- end }}
+{{- end }}

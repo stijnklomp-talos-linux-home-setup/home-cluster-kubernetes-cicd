@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pipelines-as-code-info
+  namespace: pipelines-as-code
+data:
+  # Webhooks reach the controller via the gosmee relay (hook.pipelinesascode.com
+  # -> gosmee-client -> controller) until a domain + Cloudflare Tunnel exist.
+  controller-url: "https://pipelines-as-code.192.168.1.200.sslip.io"
+  tekton-dashboard-url: "https://tekton.192.168.1.200.sslip.io"
+  provider: "GitHub App"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pipelines-as-code
+  namespace: pipelines-as-code
+data:
+  tekton-dashboard-url: "https://tekton.192.168.1.200.sslip.io"
+  # Auto-configure: any repo where the GitHub App is installed and that has a
+  # .tekton/ dir gets a Repository CR in 'home-auto' (pre-provisioned with the
+  # tekton-bot SA via the cluster-rbac chart). Requires the 'repository' event
+  # subscribed on the GitHub App.
+  auto-configure-new-github-repo: "true"
+  auto-configure-repo-namespace-template: "home-auto"
+  auto-configure-repo-repository-template: "{{repo_owner}}-{{repo_name}}-repo-cr"
+  # Hardening: /ok-to-test comments must include the commit SHA (GitHub only).
+  require-ok-to-test-sha: "true"

@@ -1,0 +1,52 @@
+# Optional prefix applied to every managed namespace at render time
+# If empty, no prefix (and no extra dash) is added
+# Keep in sync with:
+# - devops/internal/kubernetes/cicd/home-sso-auth-rbac/charts/cluster-rbac/values.yaml
+# - shared/cicd-tekton-pipelines/values/teams.yaml
+namespacePrefix: home
+
+# Namespaces managed by this chart (will be created)
+namespaces:
+  - name: infra
+    repositories:
+      # TODO: replace 'stijnklomp-talos-linux-home-setup' with the personal GitHub org name once created
+      - "https://github.com/stijnklomp-talos-linux-home-setup/home-terraform-remote-state"
+      - "https://github.com/stijnklomp-talos-linux-home-setup/terraform-aws-cognito-federation"
+      - "https://github.com/stijnklomp-talos-linux-home-setup/terraform-home-talos"
+      - "https://github.com/stijnklomp-talos-linux-home-setup/home-sso-auth-rbac"
+      - "https://github.com/stijnklomp-talos-linux-home-setup/cicd-tekton-operator"
+      - "https://github.com/stijnklomp-talos-linux-home-setup/cicd-tekton-pipelines-as-code"
+      - "https://github.com/stijnklomp-talos-linux-home-setup/test-terraform-apply-job"
+    # Whitelist who may trigger CI on their own PRs ('pull_request') and who may
+    # /ok-to-test, /test, /retest ('ok_to_test'). Only covers the Repository CRs
+    # managed by this chart; auto-configured repos use the OWNERS file instead
+    # (PaC's auto-configure cannot template a policy).
+    policy:
+      pull_request:
+        - stijnklomp
+      ok_to_test:
+        - stijnklomp
+  - name: admin
+    repositories:
+      - "https://github.com/stijnklomp-talos-linux-home-setup/cicd-tekton-pipelines"
+      - "https://github.com/stijnklomp-talos-linux-home-setup/home-argocd"
+      - "https://github.com/stijnklomp-talos-linux-home-setup/home-cloudflare-tunnel"
+    policy:
+      pull_request:
+        - stijnklomp
+      ok_to_test:
+        - stijnklomp
+  - name: service-a
+    repositories:
+      # Example team namespace: add the repos of the (future) service-a here.
+      - "https://github.com/stijnklomp-talos-linux-home-setup/service-a"
+    policy:
+      pull_request:
+        - stijnklomp
+      ok_to_test:
+        - stijnklomp
+  - name: auto
+    repositories: []
+    # PaC auto-configured repos land here via the auto-configure namespace
+    # template 'home-auto' (Repository CRs are created by PaC itself, not by
+    # this chart). No policy possible here — per-repo OWNERS files whitelist.

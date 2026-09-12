@@ -1,0 +1,15 @@
+# # Uncomment all when copying to certificate.yaml
+# # If the ingress annotation (home-issuer or cloudflare-issuer) is enough,
+# # this file is not needed.
+# apiVersion: cert-manager.io/v1
+# kind: Certificate
+# metadata:
+#   name: pac-cert
+#   namespace: pipelines-as-code
+# spec:
+#   secretName: pac-public-tls
+#   issuerRef:
+#     kind: ClusterIssuer
+#     name: {{ .Values.clusterIssuer }}
+#   dnsNames:
+#   - {{ .Values.host | quote }}
